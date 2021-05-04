@@ -49,8 +49,6 @@ class MLP(nn.Module):
         self.final_nonlinear = final_nonlinear
         self.bn = bn
 
-        # self.bn = nn.BatchNorm1d(hid_dim)
-
         if self.bn:
             self.bns = nn.ModuleList([nn.BatchNorm1d(hid_dim, track_running_stats = False) for i in range(num_layers - 1)])
             if self.final_nonlinear:
@@ -64,17 +62,9 @@ class MLP(nn.Module):
             nn.init.uniform_(self.linears[i].weight, a=-1, b=1)
             nn.init.uniform_(self.linears[i].bias, a=-1, b=1)
 
-    def reset_parameters_0(self):
-        # torch.nn.init.xavier_uniform_(self.layer.weight)
-        # torch.nn.init.constant_(self.layer.bias, 0)
-        for i in range(len(self.linears)):
-            torch.nn.init.constant_(self.linears[i].weight, 0)
-            torch.nn.init.constant_(self.linears[i].bias, 0)
-
     def forward(self, x):
         if not self.bn:
             for linear in self.linears[:-1]:
-                # x = self.bn(F.relu(linear(x)))
                 x = F.relu(linear(x))
 
             x = self.linears[-1](x)
@@ -137,26 +127,15 @@ class GIN(nn.Module):
 
         dim_list = [self.input_dim] + [hid_dim] * (self.num_hops - 1) + [output_dim]
 
-        # self.mlps = nn.ModuleList([MLP(in_dim = m+2, hid_dim = n, out_dim = n, num_layers = 2, final_nonlinear = True) for m, n in zip(dim_list[:-2], dim_list[1:-1])])
-        # self.mlps.append(MLP(in_dim = dim_list[-2] + 2, hid_dim = dim_list[-2], out_dim = dim_list[-1], num_layers = 2, final_nonlinear = False))
-
         self.mlps = nn.ModuleList([MLP(in_dim = m, hid_dim = n, out_dim = n, num_layers = 2, final_nonlinear = True, reset_parameters = params_dict.get('reset_parameters', False)) for m, n in zip(dim_list[:-2], dim_list[1:-1])])
         self.mlps.append(MLP(in_dim = dim_list[-2], hid_dim = dim_list[-2], out_dim = dim_list[-1], num_layers = 2, final_nonlinear = False, reset_parameters = params_dict.get('reset_parameters', False)))
 
-        # self.mlps = nn.ModuleList([MLP(in_dim = m, hid_dim = n, out_dim = n, num_layers = 2, final_nonlinear = True, bn = True) for m, n in zip(dim_list[:-2], dim_list[1:-1])])
-        # self.mlps.append(MLP(in_dim = dim_list[-2], hid_dim = dim_list[-2], out_dim = dim_list[-1], num_layers = 2, final_nonlinear = False, bn = True))
-
         self.gin_conv_layers = nn.ModuleList([GINConv(apply_func = mlp, aggregator_type = 'sum', init_eps = 0, learn_eps = True) for mlp in self.mlps])
-
-        # if params_dict["role"] == "s":
-        #     for i in range(len(self.mlps)):
-        #         self.mlps[i].reset_parameters()
 
     def forward(self, batched_graph):
         feat = batched_graph.ndata[self.input_channel]
 
         for gin_conv in self.gin_conv_layers:
-            # feat = torch.cat([batched_graph.ndata[self.input_channel], feat], dim = 1)
             feat = gin_conv(batched_graph, feat)
 
         return feat
@@ -213,18 +192,6 @@ class SWL_GNN(nn.Module):
             self.first_layer_linear = nn.Linear(self.input_dim * sum([len(self.ops[op]) for op in self.ops]), hid_dim)
         self.second_layer_linear = nn.Linear(hid_dim, output_dim)
 
-        # self.mlp = MLP(self.input_dim * sum([len(self.ops[op]) for op in self.ops]), hid_dim, output_dim, 3, False)
-
-        # self.first_layer_linear_list = nn.Linear(self.input_dim * (self.num_hops + 1), hid_dim)
-        # # self.first_layer_linear_list = nn.Linear(self.input_dim, hid_dim)
-        # # self.first_layer_linear_list = nn.Linear(self.input_dim * 5, hid_dim)
-        # self.second_layer_linear = nn.Linear(hid_dim, output_dim)
-
-        # # self.bns = nn.ModuleList([nn.BatchNorm1d(self.input_dim, affine = False) for i in range(self.num_hops + 1)])
-        # self.bn = nn.BatchNorm1d(self.input_dim * (self.num_hops + 1), affine=False)
-        # # self.bn = nn.BatchNorm1d(self.input_dim)
-
-        
         if params_dict.get('precompute', False):
             self.augmented_feature = self.precompute(params_dict['batched_graph'], self.ops)
         else:
@@ -233,16 +200,6 @@ class SWL_GNN(nn.Module):
 
         if 'bethe' in self.ops:
             self.eps_list = nn.Parameter(torch.zeros(len(self.ops['bethe'])))
-
-            # self.bn = nn.BatchNorm1d(self.input_dim * sum([len(self.ops[op]) for op in self.ops]), affine = False, track_running_stats=False)
-            
-        # else:
-        #     self.bn = nn.BatchNorm1d(self.input_dim * sum([len(self.ops[op]) for op in self.ops]), affine = False)
-        #     # self.bn = nn.BatchNorm1d(hid_dim, affine=False)
-
-        # if params_dict['role'] == "s":
-        #     self.reset_parameters()
-
 
         if params_dict.get('reset_parameters', False):
             self.reset_parameters()
@@ -338,7 +295,6 @@ class SWL_GNN(nn.Module):
                 H_neg_r = h_prev * (c - 1) + np.sqrt(c) * graph.ndata['h'] + h_prev * diag_degree
 
                 graph.ndata['h'] = - H_pos_r + h_prev * 8
-                # graph.ndata['h'] = - H_neg_r + h_prev * (40 + torch.clamp(self.eps_list[i], min = -40, max = 40))
 
             else:
                 print("Wrong operator: {}".format(op))
@@ -355,93 +311,16 @@ class SWL_GNN(nn.Module):
 
         return augmented_feature
 
-
-    # def precompute(self, batched_graph, op):
-    #     if self.op_base != 'chebyshev':
-    #         new_g = add_self_loop(batched_graph)
-    #         new_g.ndata[self.input_channel] = batched_graph.ndata[self.input_channel]
-    #         batched_graph = new_g
-
-    #     batched_graph.ndata['h'] = batched_graph.ndata[self.input_channel].to(torch.float)
-    #     # batched_graph.ndata['h'] = self.bns[0](batched_graph.ndata[self.input_channel].to(torch.float))
-
-    #     augmented_feature = [batched_graph.ndata['h']]
-
-    #     if self.op_base != 'chebyshev':
-    #         for i in range(self.num_hops):
-    #             if self.op_base == 'adj':
-    #                 batched_graph.update_all(message_func = dfunc.copy_u('h','m'), reduce_func = dfunc.sum('m','h'))
-    #             elif self.op_base == 'laplacian':
-    #                 degs = batched_graph.out_degrees().float().clamp(min=1)
-    #                 norm = torch.pow(degs, -0.5)
-    #                 norm = torch.reshape(norm, norm.shape + (1,) * (graph.ndata[self.input_channel].dim() - 1))
-    #                 batched_graph.ndata['h'] = batched_graph.ndata['h'] * norm
-
-    #                 batched_graph.update_all(message_func = dfunc.copy_u('h','m'), reduce_func = dfunc.sum('m','h'))
-
-    #                 degs = batched_graph.in_degrees().float().clamp(min=1)
-    #                 norm = torch.pow(degs, -0.5)
-    #                 norm = torch.reshape(norm, norm.shape + (1,) * (graph.ndata[self.input_channel].dim() - 1))
-    #                 batched_graph.ndata['h'] = batched_graph.ndata['h'] * norm
-            
-    #             augmented_feature.append(batched_graph.ndata['h'])
-
-    #     else:
-    #         degs = batched_graph.out_degrees().float().clamp(min=1)
-    #         norm = torch.pow(degs, -0.5)
-    #         norm = torch.reshape(norm, norm.shape + (1,) * (graph.ndata[self.input_channel].dim() - 1))
-    #         lambda_max = dgl.laplacian_lambda_max(batched_graph)[0]
-    #         # lambda_max = dgl.broadcast_nodes(batched_graph, lambda_max[0])
-
-    #         Tx_0 = batched_graph.ndata['h']
-
-    #         if self.num_hops >= 1:
-    #             batched_graph.ndata['h'] = Tx_0 * norm
-    #             batched_graph.update_all(dfunc.copy_u('h', 'm'), dfunc.sum('m', 'h'))
-    #             h = batched_graph.ndata.pop('h') * norm
-    #             # Λ = 2 * (I - D ^ -1/2 A D ^ -1/2) / lambda_max - I
-    #             #   = - 2(D ^ -1/2 A D ^ -1/2) / lambda_max + (2 / lambda_max - 1) I
-    #             Tx_1 = -2. * h / lambda_max + Tx_0 * (2. / lambda_max - 1)
-    #             augmented_feature.append(Tx_1)
-
-    #         for i in range(2, self.num_hops + 1):
-    #             batched_graph.ndata['h'] = Tx_1 * norm
-    #             batched_graph.update_all(dfunc.copy_u('h', 'm'), dfunc.sum('m', 'h'))
-    #             h = batched_graph.ndata.pop('h') * norm
-    #             # Tx_k = 2 * Λ * Tx_(k-1) - Tx_(k-2)
-    #             #      = - 4(D ^ -1/2 A D ^ -1/2) / lambda_max Tx_(k-1) +
-    #             #        (4 / lambda_max - 2) Tx_(k-1) -
-    #             #        Tx_(k-2)
-    #             Tx_2 = -4. * h / lambda_max + Tx_1 * (4. / lambda_max - 2) - Tx_0
-    #             augmented_feature.append(Tx_2)
-    #             Tx_1, Tx_0 = Tx_2, Tx_1
-
-    #         # batched_graph.ndata['h'] = self.bns[i+1](batched_graph.ndata['h'])
-
-    #     augmented_feature = torch.cat(augmented_feature, dim = 1)
-
-    #     self.augmented_feature = augmented_feature
-
     def forward(self, batched_graph):
         if self.params_dict['precompute']:
-            # augmented_feature = augmented_feature[-1]
-            # augmented_feature = torch.cat(augmented_feature[4:9], dim = 1)
 
             augmented_feature = self.augmented_feature
             
         else:
             augmented_feature = self.precompute(batched_graph, self.ops)
             self.bns_used = 0
-            # augmented_feature = self.bn(augmented_feature)
             
-        # augmented_feature = self.bn(augmented_feature)
-        # 
-        # y = self.first_layer_linear_list(self.augmented_feature)
-
         y = self.first_layer_linear(augmented_feature)
-        # y = self.second_layer_linear(F.dropout(F.relu(y), 0.5, training = self.training))
         y = self.second_layer_linear(F.relu(y))
-
-        # y = self.mlp(augmented_feature)
 
         return y
