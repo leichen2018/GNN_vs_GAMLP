@@ -111,3 +111,13 @@ python3.7m main.py --dataset regular --lr 0.005 --epochs 20000 --num_hops 3 --hi
 </p>
 </details>
 
+## Citation
+
+```
+@article{chen2020graph,
+  title={On Graph Neural Networks versus Graph-Augmented MLPs},
+  author={Chen, Lei and Chen, Zhengdao and Bruna, Joan},
+  journal={arXiv preprint arXiv:2010.15116},
+  year={2020}
+}
+```
