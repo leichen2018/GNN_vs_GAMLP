@@ -1,0 +1,1 @@
+{"model": "swl_gnn", "input_dim": -1, "input_channel": "feat", "hid_dim": 4, "output_dim": 4, "num_classes": -1, "output_channel": "out", "num_hops": 0, "nhop_gcn": 0, "nhop_gin": 9, "nhop_min_triangle": true, "nhop_motif_triangle": true, "stack_op": true, "no_identity": true}

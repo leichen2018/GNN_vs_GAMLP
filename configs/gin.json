@@ -1,0 +1,11 @@
+{
+    "model": "gin",
+    "input_dim": -1,
+    "input_channel": "feat",
+    "hid_dim": 128,
+    "output_dim": 128,
+    "num_classes": -1,
+    "output_channel": "out",
+    "num_hops": 4,
+    "op_base": "adj"
+}

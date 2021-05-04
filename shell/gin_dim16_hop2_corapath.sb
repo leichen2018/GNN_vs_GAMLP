@@ -1,0 +1,24 @@
+#!/bin/bash
+#SBATCH --verbose
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=4
+#SBATCH --time=48:00:00
+#SBATCH --mem=16GB
+#SBATCH --job-name=gincr2
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=leic.monitor@gmail.com
+#SBATCH --output=hpc_outputs/slurm_%j.out
+#SBATCH --error=hpc_outputs/slurm_%j.err 
+#SBATCH --gres=gpu:1080ti:1
+
+cd /home/lc3909/wl_and_swl
+module purge
+
+nvidia-smi
+
+set -x
+
+# echo ${SLURM_ARRAY_TASK_ID}
+
+python3.7m main.py --dataset cora_path --lr 0.01 --epochs 20000 --num_hops 2 --hid_dim 16 --model gin
+ 
