@@ -16,7 +16,7 @@ dgl 0.4.3
 ### Community detection
 
 <details>
-<summary>Click</summary>
+<summary>Click</summary><p>
 * GA-MLP-H (hardness rank 1)
 ```
 python3.7m main_sbm.py --model swl_gnn_dim10_bh120_mint0_mott0_stack1_idnt1 --verbose --lr 0.001 --n-graphs 6000 --p 4.5 --q 1.5 --n-nodes 250 --n-communities 2
@@ -66,7 +66,7 @@ python3.7m main_sbm.py --model swl_gnn_dim10_gin120_mint0_mott0_stack1_idnt1 --v
 ```
 python3.7m main_sbm.py --model swl_gnn_dim10_gin120_mint0_mott0_stack1_idnt1 --verbose --lr 0.001 --n-graphs 6000 --p 6 --q 0 --n-nodes 250 --n-communities 2
 ```
-</details>
+</p></details>
 
 ### Counting attributed walks
 
