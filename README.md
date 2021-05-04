@@ -68,10 +68,15 @@ python3.7m main_sbm.py --model swl_gnn_dim10_gin120_mint0_mott0_stack1_idnt1 --v
 ```
 python3.7m main_sbm.py --model swl_gnn_dim10_gin120_mint0_mott0_stack1_idnt1 --verbose --lr 0.001 --n-graphs 6000 --p 6 --q 0 --n-nodes 250 --n-communities 2
 ```
+
 </p>
 </details>
 
 ### Counting attributed walks
+
+<details>
+<summary>Click</summary>
+<p>
 
 * GA-MLP-A (Cora)
 ```
@@ -102,3 +107,7 @@ python3.7m main.py --dataset regular --lr 0.001 --epochs 20000 --num_hops 6 --hi
 ```
 python3.7m main.py --dataset regular --lr 0.005 --epochs 20000 --num_hops 3 --hid_dim 16 --model gin_jk
 ```
+
+</p>
+</details>
+
